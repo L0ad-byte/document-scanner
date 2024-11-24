@@ -14,6 +14,8 @@
   <meta name="theme-color" content="#6200ea">
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
+  <!-- Include jsPDF library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
   <header>
@@ -55,6 +57,16 @@
   <footer>
     &copy; 2023 Your Company Name
   </footer>
+
+  <!-- Settings Panel -->
+  <div id="settingsPanel" class="settings-panel hidden">
+    <h2>Settings</h2>
+    <button id="clearCacheButton">Clear Cache and Data</button>
+    <button id="closeSettingsButton">Close</button>
+  </div>
+
+  <!-- Settings Button -->
+  <button id="settingsButton" class="settings-button">⚙️</button>
 
   <!-- Include main JavaScript file -->
   <script src="app.js"></script>

@@ -11,42 +11,50 @@
   <!-- Fallback icon -->
   <link rel="icon" sizes="192x192" href="icons/icon-192x192.png">
   <!-- Meta tags for PWA -->
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#6200ea">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h1>Document Scanner</h1>
+  <header>
+    <h1>Document Scanner</h1>
+  </header>
+  <main>
+    <!-- Camera Selection -->
+    <div class="selection-container" id="cameraSelection">
+      <label for="cameraList">Select Camera:</label>
+      <select id="cameraList"></select>
+    </div>
 
-  <!-- Camera Selection -->
-  <div id="cameraSelection">
-    <label for="cameraList">Select Camera:</label>
-    <select id="cameraList"></select>
-  </div>
+    <!-- Document Type Selection -->
+    <div class="selection-container" id="documentSelection">
+      <label for="documentType">Select Document Type:</label>
+      <select id="documentType">
+        <option value="idFront">ID Front</option>
+        <option value="idBack">ID Back</option>
+        <option value="kb">KB</option>
+        <option value="sso">SSO</option>
+        <option value="hazardId">Hazard ID</option>
+      </select>
+    </div>
 
-  <!-- Document Type Selection -->
-  <div id="documentSelection">
-    <label for="documentType">Select Document Type:</label>
-    <select id="documentType">
-      <option value="idFront">ID Front</option>
-      <option value="idBack">ID Back</option>
-      <option value="kb">KB</option>
-      <option value="sso">SSO</option>
-      <option value="hazardId">Hazard ID</option>
-    </select>
-  </div>
+    <!-- Video Element -->
+    <div id="cameraContainer">
+      <video id="video" autoplay playsinline></video>
+    </div>
 
-  <!-- Video Element -->
-  <div id="cameraContainer">
-    <video id="video" autoplay playsinline></video>
-  </div>
+    <!-- Capture Button -->
+    <button id="captureButton">Capture Image</button>
 
-  <!-- Capture Button -->
-  <button id="captureButton">Capture Image</button>
+    <!-- Canvas for Image Processing -->
+    <canvas id="canvas" style="display:none;"></canvas>
 
-  <!-- Canvas for Image Processing -->
-  <canvas id="canvas" style="display:none;"></canvas>
-
-  <!-- Status Message -->
-  <div id="status"></div>
+    <!-- Status Message -->
+    <div id="status"></div>
+  </main>
+  <footer>
+    &copy; 2023 Your Company Name
+  </footer>
 
   <!-- Include main JavaScript file -->
   <script src="app.js"></script>

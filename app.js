@@ -136,7 +136,7 @@ function uploadImages() {
 }
 
 function uploadImageToAppsScript(image, index) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbyuQ4RJdL8zVYA0mVg34CBjYl_oqT7Y2-frR4M33JF_9wFVf-nvTOdkDYVgaF3kYxanHw/exec'; // Replace with your Apps Script URL
+  const scriptURL = 'YOUR_APPS_SCRIPT_WEB_APP_URL'; // Replace with your Apps Script URL
 
   const form = new FormData();
   form.append('docType', image.docType);

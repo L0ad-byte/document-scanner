@@ -101,3 +101,56 @@ footer {
   font-size: 12px;
   color: #aaa;
 }
+
+/* Settings Panel Styles */
+.settings-panel {
+  position: fixed;
+  top: 20%;
+  left: 10%;
+  width: 80%;
+  background-color: #fff;
+  border: 2px solid #6200ea;
+  border-radius: 8px;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.settings-panel.hidden {
+  display: none;
+}
+
+.settings-panel h2 {
+  margin-bottom: 20px;
+}
+
+.settings-panel button {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 12px;
+  font-size: 16px;
+  color: #fff;
+  background-color: #6200ea;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.settings-panel button:last-child {
+  background-color: #ccc;
+  color: #333;
+}
+
+/* Settings Button */
+.settings-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 15px;
+  font-size: 16px;
+  background-color: #6200ea;
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}

@@ -180,24 +180,31 @@ function uploadImages() {
 function uploadPdfToAppsScript(pdfBlob) {
   const scriptURL = 'https://script.google.com/macros/s/AKfycbzMWFi4xVRmhdqvW7MZxAxGwRX0ryt_eSUUPp2KV8Lt6LFNzI7jsFA4tm1wnaRhG2E_Gw/exec';
 
-  const formData = new FormData();
-  formData.append('file', pdfBlob, `Documents_${new Date().toISOString()}.pdf`);
+  const reader = new FileReader();
+  reader.onloadend = function() {
+    const base64data = reader.result.split(',')[1]; // Get the Base64 string without the data URL prefix
 
-  fetch(scriptURL, {
-    method: 'POST',
-    body: formData,
-  })
-  .then(response => response.text())
-  .then(result => {
-    console.log('Server response:', result);
-    alert('Documents uploaded successfully.');
-    // Clear the images array after successful upload
-    imagesToUpload = [];
-  })
-  .catch(error => {
-    console.error('Error uploading PDF:', error);
-    alert('Error uploading documents.');
-  });
+    const formData = new FormData();
+    formData.append('fileName', `Documents_${new Date().toISOString()}.pdf`);
+    formData.append('fileData', base64data);
+
+    fetch(scriptURL, {
+      method: 'POST',
+      body: formData,
+    })
+    .then(response => response.text())
+    .then(result => {
+      console.log('Server response:', result);
+      alert('Documents uploaded successfully.');
+      // Clear the images array after successful upload
+      imagesToUpload = [];
+    })
+    .catch(error => {
+      console.error('Error uploading PDF:', error);
+      alert('Error uploading documents.');
+    });
+  };
+  reader.readAsDataURL(pdfBlob);
 }
 
 // Function to clear cache and data

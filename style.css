@@ -1,0 +1,35 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+#cameraSelection, #documentSelection {
+  margin: 20px;
+}
+
+#cameraContainer {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: auto;
+}
+
+#video {
+  width: 100%;
+  height: auto;
+  background-color: #000;
+}
+
+#captureButton {
+  margin: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+#status {
+  margin: 20px;
+  font-size: 16px;
+  color: green;
+}

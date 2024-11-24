@@ -156,11 +156,15 @@ function uploadImages() {
 }
 
 function uploadImageToAppsScript(image, index) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbwlH9hfxaXFQjGIx1t-QIukzr9dMfiJbACx2YxEBY7Qe3Iai5AVulf8xoclr3Xbsm563A/exec';
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbyUCi4-n6_njAonoG0zv2JxrDLTwEOPCTAs-gX3aGaXC5CJq6Ij6NaNklLYI5GbNfJOdg/exec';
 
   const form = new FormData();
   form.append('docType', image.docType);
   form.append('imageData', image.imageData.split(',')[1]); // Remove data URL prefix
+
+  // Log the data being sent
+  console.log('Uploading image with docType:', image.docType);
+  console.log('Image data length:', image.imageData.length);
 
   fetch(scriptURL, {
     method: 'POST',
@@ -168,7 +172,7 @@ function uploadImageToAppsScript(image, index) {
   })
   .then(response => response.text())
   .then(result => {
-    console.log('Image uploaded to Apps Script');
+    console.log('Server response:', result);
     // Remove uploaded image from the array
     imagesToUpload.splice(index, 1);
   })

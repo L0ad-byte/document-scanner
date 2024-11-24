@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document Scanner PWA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Link to manifest -->
+  <link rel="manifest" href="manifest.json">
+  <!-- Link to CSS -->
+  <link rel="stylesheet" href="style.css">
+  <!-- Fallback icon -->
+  <link rel="icon" href="icons/icon-192x192.png">
+  <!-- Meta tags for PWA -->
+  <meta name="theme-color" content="#000000">
+</head>
+<body>
+  <h1>Document Scanner</h1>
+
+  <!-- Camera Selection -->
+  <div id="cameraSelection">
+    <label for="cameraList">Select Camera:</label>
+    <select id="cameraList"></select>
+  </div>
+
+  <!-- Document Type Selection -->
+  <div id="documentSelection">
+    <label for="documentType">Select Document Type:</label>
+    <select id="documentType">
+      <option value="idFront">ID Front</option>
+      <option value="idBack">ID Back</option>
+      <option value="kb">KB</option>
+      <option value="sso">SSO</option>
+      <option value="hazardId">Hazard ID</option>
+    </select>
+  </div>
+
+  <!-- Video Element -->
+  <div id="cameraContainer">
+    <video id="video" autoplay playsinline></video>
+  </div>
+
+  <!-- Capture Button -->
+  <button id="captureButton">Capture Image</button>
+
+  <!-- Canvas for Image Processing -->
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <!-- Status Message -->
+  <div id="status"></div>
+
+  <!-- Include main JavaScript file -->
+  <script src="app.js"></script>
+</body>
+</html>

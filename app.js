@@ -20,9 +20,11 @@ let imagesToUpload = [];
 
 // On page load
 window.addEventListener('load', () => {
+  console.log('Page loaded');
   getCameras();
   setupEventListeners();
   window.addEventListener('online', () => {
+    console.log('Browser is online');
     if (imagesToUpload.length > 0) {
       uploadImages();
     }
@@ -32,6 +34,7 @@ window.addEventListener('load', () => {
 // Get list of cameras
 async function getCameras() {
   try {
+    console.log('Getting list of cameras');
     // Check for mediaDevices support
     if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
       alert('Your browser does not support media devices.');
@@ -62,6 +65,7 @@ async function getCameras() {
 
     cameraList.addEventListener('change', (event) => {
       selectedDeviceId = event.target.value;
+      console.log('Selected camera deviceId:', selectedDeviceId);
       startCamera(selectedDeviceId);
     });
   } catch (error) {
@@ -74,8 +78,10 @@ async function getCameras() {
 async function startCamera(deviceId) {
   if (videoStream) {
     videoStream.getTracks().forEach(track => track.stop());
+    console.log('Stopped previous video stream');
   }
   try {
+    console.log('Starting camera with deviceId:', deviceId);
     const constraints = {
       video: { deviceId: deviceId ? { exact: deviceId } : undefined, facingMode: 'environment' },
       audio: false
@@ -85,6 +91,7 @@ async function startCamera(deviceId) {
     videoElement.srcObject = videoStream;
     videoElement.play();
     document.getElementById('status').innerText = '';
+    console.log('Camera started successfully');
   } catch (error) {
     console.error('Error accessing camera:', error);
     document.getElementById('status').innerText = 'Error accessing camera. Please ensure you have granted camera permissions.';
@@ -93,19 +100,23 @@ async function startCamera(deviceId) {
 
 // Setup event listeners
 function setupEventListeners() {
+  console.log('Setting up event listeners');
   document.getElementById('captureButton').addEventListener('click', () => {
     const docType = document.getElementById('documentType').value;
+    console.log('Capture button clicked, docType:', docType);
     captureImage(docType);
   });
 
   // Settings button event listener
   document.getElementById('settingsButton').addEventListener('click', () => {
     document.getElementById('settingsPanel').classList.remove('hidden');
+    console.log('Settings panel opened');
   });
 
   // Close settings panel
   document.getElementById('closeSettingsButton').addEventListener('click', () => {
     document.getElementById('settingsPanel').classList.add('hidden');
+    console.log('Settings panel closed');
   });
 
   // Clear cache and data
@@ -116,6 +127,7 @@ function setupEventListeners() {
 
 // Capture image
 function captureImage(docType) {
+  console.log('Capturing image for docType:', docType);
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   canvas.width = video.videoWidth;
@@ -123,6 +135,7 @@ function captureImage(docType) {
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   const imageData = canvas.toDataURL('image/png');
+  console.log('Image captured, imageData length:', imageData.length);
   saveImage(docType, imageData);
   postCaptureOptions();
 }
@@ -130,19 +143,22 @@ function captureImage(docType) {
 // Save image
 function saveImage(docType, imageData) {
   imagesToUpload.push({ docType, imageData });
-  console.log(`Image saved for ${docType}`);
+  console.log(`Image saved for ${docType}, total images to upload: ${imagesToUpload.length}`);
 }
 
 // Post capture options
 function postCaptureOptions() {
   const proceed = confirm('Do you want to capture another document? Click OK to capture another, or Cancel to upload.');
   if (proceed) {
+    console.log('User chose to capture another document');
     // Do nothing, allow user to select and capture another document
   } else {
+    console.log('User chose to upload documents');
     if (navigator.onLine) {
       uploadImages();
     } else {
       alert('You are offline. Images will be uploaded when you are back online.');
+      console.log('Browser is offline, cannot upload images now');
     }
   }
 }
@@ -153,41 +169,52 @@ function uploadImages() {
     console.log('No images to upload');
     return;
   }
+  console.log('Uploading images, total images:', imagesToUpload.length);
 
-  // Create a new PDF document
-  const pdfDoc = new jsPDF();
+  try {
+    // Create a new PDF document
+    const pdfDoc = new jsPDF();
 
-  imagesToUpload.forEach((image, index) => {
-    const base64Img = image.imageData;
+    imagesToUpload.forEach((image, index) => {
+      const base64Img = image.imageData;
+      console.log(`Adding image ${index + 1} to PDF, docType: ${image.docType}`);
+      // Add image to PDF
+      pdfDoc.addImage(base64Img, 'PNG', 10, 10, 190, 0); // Adjust dimensions as needed
 
-    // Add image to PDF
-    pdfDoc.addImage(base64Img, 'PNG', 10, 10, 190, 0); // Adjust dimensions as needed
+      // Add a new page if not the last image
+      if (index < imagesToUpload.length - 1) {
+        pdfDoc.addPage();
+      }
+    });
 
-    // Add a new page if not the last image
-    if (index < imagesToUpload.length - 1) {
-      pdfDoc.addPage();
-    }
-  });
+    // Generate PDF as a Blob
+    const pdfBlob = pdfDoc.output('blob');
+    console.log('PDF generated, size:', pdfBlob.size);
 
-  // Generate PDF as a Blob
-  const pdfBlob = pdfDoc.output('blob');
-
-  // Upload the PDF to Google Drive
-  uploadPdfToAppsScript(pdfBlob);
+    // Upload the PDF to Google Drive
+    uploadPdfToAppsScript(pdfBlob);
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    alert('Error generating PDF.');
+  }
 }
 
 // Function to upload PDF to Apps Script
 function uploadPdfToAppsScript(pdfBlob) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbz93xyTrE84SnqHZFX7ja748yxfBtpz4t5qN3KgVpoYlH7wPS_OvVQ5kXShPmZDUf8/exec';
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbzMWFi4xVRmhdqvW7MZxAxGwRX0ryt_eSUUPp2KV8Lt6LFNzI7jsFA4tm1wnaRhG2E_Gw/exec';
 
+  console.log('Uploading PDF to Apps Script');
   const reader = new FileReader();
   reader.onloadend = function() {
     const base64data = reader.result.split(',')[1]; // Get the Base64 string without the data URL prefix
+    console.log('PDF converted to Base64, length:', base64data.length);
 
     const formData = new FormData();
-    formData.append('fileName', `Documents_${new Date().toISOString()}.pdf`);
+    const fileName = `Documents_${new Date().toISOString()}.pdf`;
+    formData.append('fileName', fileName);
     formData.append('fileData', base64data);
 
+    console.log('Sending POST request to Apps Script');
     fetch(scriptURL, {
       method: 'POST',
       body: formData,
@@ -195,14 +222,24 @@ function uploadPdfToAppsScript(pdfBlob) {
     .then(response => response.text())
     .then(result => {
       console.log('Server response:', result);
-      alert('Documents uploaded successfully.');
-      // Clear the images array after successful upload
-      imagesToUpload = [];
+      if (result.trim() === 'Success') {
+        alert('Documents uploaded successfully.');
+        // Clear the images array after successful upload
+        imagesToUpload = [];
+        console.log('Images array cleared after successful upload');
+      } else {
+        console.error('Server returned an error:', result);
+        alert('Error uploading documents. Server error: ' + result);
+      }
     })
     .catch(error => {
       console.error('Error uploading PDF:', error);
-      alert('Error uploading documents.');
+      alert('Error uploading documents. Network error: ' + error.message);
     });
+  };
+  reader.onerror = function(error) {
+    console.error('Error reading PDF Blob:', error);
+    alert('Error reading PDF file.');
   };
   reader.readAsDataURL(pdfBlob);
 }
@@ -210,11 +247,14 @@ function uploadPdfToAppsScript(pdfBlob) {
 // Function to clear cache and data
 function clearCacheAndData() {
   if (confirm('Are you sure you want to clear cache and data?')) {
+    console.log('Clearing cache and data');
     // Clear service worker cache
     if ('caches' in window) {
       caches.keys().then((names) => {
         for (let name of names) {
-          caches.delete(name);
+          caches.delete(name).then(() => {
+            console.log('Cache deleted:', name);
+          });
         }
       });
     }
@@ -223,14 +263,19 @@ function clearCacheAndData() {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         for (let registration of registrations) {
-          registration.unregister();
+          registration.unregister().then(() => {
+            console.log('Service worker unregistered');
+          });
         }
       });
     }
 
     // Clear imagesToUpload array
     imagesToUpload = [];
+    console.log('Images array cleared');
 
     alert('Cache and data cleared. Please reload the app.');
+  } else {
+    console.log('User canceled cache and data clearing');
   }
 }

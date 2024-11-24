@@ -29,25 +29,41 @@ window.addEventListener('load', () => {
 // Get list of cameras
 async function getCameras() {
   try {
+    // Check for mediaDevices support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+      alert('Your browser does not support media devices.');
+      return;
+    }
+
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = devices.filter(device => device.kind === 'videoinput');
     const cameraList = document.getElementById('cameraList');
+
+    // Clear existing options
+    cameraList.innerHTML = '';
+
     videoDevices.forEach((device, index) => {
       const option = document.createElement('option');
       option.value = device.deviceId;
       option.text = device.label || `Camera ${index + 1}`;
       cameraList.appendChild(option);
     });
+
     if (videoDevices.length > 0) {
       selectedDeviceId = videoDevices[0].deviceId;
       startCamera(selectedDeviceId);
+      document.getElementById('status').innerText = '';
+    } else {
+      document.getElementById('status').innerText = 'No cameras found on this device.';
     }
+
     cameraList.addEventListener('change', (event) => {
       selectedDeviceId = event.target.value;
       startCamera(selectedDeviceId);
     });
   } catch (error) {
     console.error('Error getting cameras:', error);
+    document.getElementById('status').innerText = 'Error accessing cameras. Please ensure you have granted camera permissions.';
   }
 }
 
@@ -58,13 +74,17 @@ async function startCamera(deviceId) {
   }
   try {
     const constraints = {
-      video: { deviceId: { exact: deviceId } }
+      video: { deviceId: deviceId ? { exact: deviceId } : undefined, facingMode: 'environment' },
+      audio: false
     };
     videoStream = await navigator.mediaDevices.getUserMedia(constraints);
     const videoElement = document.getElementById('video');
     videoElement.srcObject = videoStream;
+    videoElement.play();
+    document.getElementById('status').innerText = '';
   } catch (error) {
     console.error('Error accessing camera:', error);
+    document.getElementById('status').innerText = 'Error accessing camera. Please ensure you have granted camera permissions.';
   }
 }
 

@@ -178,7 +178,7 @@ function uploadImages() {
 
 // Function to upload PDF to Apps Script
 function uploadPdfToAppsScript(pdfBlob) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbzMWFi4xVRmhdqvW7MZxAxGwRX0ryt_eSUUPp2KV8Lt6LFNzI7jsFA4tm1wnaRhG2E_Gw/exec';
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbz93xyTrE84SnqHZFX7ja748yxfBtpz4t5qN3KgVpoYlH7wPS_OvVQ5kXShPmZDUf8/exec';
 
   const reader = new FileReader();
   reader.onloadend = function() {

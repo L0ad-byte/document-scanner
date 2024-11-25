@@ -9,20 +9,25 @@ const uploadButton = document.getElementById('uploadButton');
 const preview = document.getElementById('preview');
 const cameraOptions = document.getElementById('cameraOptions');
 const documentTypeSelect = document.getElementById('documentType');
+const clearCacheButton = document.getElementById('clearCacheButton'); // Added
+const sidebar = document.getElementById('sidebar'); // Added
+const overlay = document.getElementById('overlay'); // Added
 
 // IndexedDB variables
 let db;
 
-// Google API Credentials (Replace with your actual Client ID)
+// Google API Credentials (Replace with your actual Client ID and API Key)
 const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
 const API_KEY = 'YOUR_GOOGLE_API_KEY';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const CACHE_NAME = 'document-scanner-cache-v1'; // Ensure this matches service-worker.js
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
   initDB();
   populateCameraOptions();
   initGoogleAPI();
+  setupClearCache();
 });
 
 // Initialize IndexedDB
@@ -279,4 +284,51 @@ function clearIndexedDB() {
   request.onerror = (event) => {
     console.error('Error clearing IndexedDB:', event.target.errorCode);
   };
+}
+
+// Menu Toggle Function
+function toggleSidebar() {
+  sidebar.style.width = (sidebar.style.width === '250px') ? '0' : '250px';
+  overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
+}
+
+// Setup Clear Cache Button
+function setupClearCache() {
+  clearCacheButton.addEventListener('click', async () => {
+    const confirmClear = confirm('Are you sure you want to clear the cache and all stored images?');
+    if (!confirmClear) return;
+
+    try {
+      // Clear Service Worker Cache
+      const cacheDeleted = await caches.delete(CACHE_NAME);
+      if (cacheDeleted) {
+        console.log('Service Worker cache cleared.');
+      } else {
+        console.warn('No matching cache found to clear.');
+      }
+
+      // Clear IndexedDB
+      clearIndexedDB();
+
+      alert('Cache and stored images have been cleared.');
+
+      // Close Sidebar and Overlay
+      toggleSidebar();
+      
+      // Optionally, unregister the service worker and reload
+      /*
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.unregister();
+          console.log('Service Worker unregistered.');
+        }
+      }
+      window.location.reload();
+      */
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      alert('Failed to clear cache.');
+    }
+  });
 }

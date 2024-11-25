@@ -263,7 +263,7 @@ function uploadImages() {
 
 // Function to upload PDF to Apps Script
 function uploadPdfToAppsScript(pdfBlob, idNumber) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbxEXpX0t39Jh4_2Z9cTsvsEGYoevxhl8PhKrKUdSm9BTD9thNabfsJ21ngFPv3AW8IV-w/exec'; // Replace with your actual Apps Script URL
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbxEXpX0t39Jh4_2Z9cTsvsEGYoevxhl8PhKrKUdSm9BTD9thNabfsJ21ngFPv3AW8IV-w/exec'; // Use your actual Apps Script URL
 
   log('Uploading PDF to Apps Script');
   const reader = new FileReader();
@@ -271,34 +271,41 @@ function uploadPdfToAppsScript(pdfBlob, idNumber) {
     const base64data = reader.result.split(',')[1]; // Get the Base64 string without the data URL prefix
     log('PDF converted to Base64, length:', base64data.length);
 
-    const formData = new FormData();
     const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // Format date as dd-mm-yyyy
     const fileName = `${idNumber}_${dateStr}.pdf`;
-    formData.append('fileName', fileName);
-    formData.append('fileData', base64data);
 
-    log('Sending POST request to Apps Script');
+    const payload = {
+      fileName: fileName,
+      fileData: base64data,
+    };
+
+    log('Sending POST request to Apps Script with JSON payload');
     fetch(scriptURL, {
       method: 'POST',
       mode: 'cors', // Ensure CORS mode is set
-      body: formData,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
     })
-    .then(response => response.text())
-    .then(result => {
-      log('Server response:', result);
-      if (result.trim() === 'Success') {
-        alert('Documents uploaded successfully.');
-        // Clear the images array after successful upload
-        imagesToUpload = [];
-        log('Images array cleared after successful upload');
-      } else {
-        log('Server returned an error:', result);
-        alert('Error uploading documents. Server error: ' + result);
-      }
+    .then(response => {
+      log('Fetch response status:', response.status);
+      return response.text().then(result => {
+        log('Server response:', result);
+        if (result.trim() === 'Success') {
+          alert('Documents uploaded successfully.');
+          // Clear the images array after successful upload
+          imagesToUpload = [];
+          log('Images array cleared after successful upload');
+        } else {
+          log('Server returned an error:', result);
+          alert('Error uploading documents. Server error: ' + result);
+        }
+      });
     })
     .catch(error => {
       log('Error uploading PDF:', error);
-      alert('Error uploading documents. Network error: ' + error.message);
+      alert('Error uploading documents. Network error: ' + (error.message || error));
     });
   };
   reader.onerror = function(error) {

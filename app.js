@@ -1,310 +1,282 @@
-// Check for browser support
-if (!('serviceWorker' in navigator)) {
-  alert('Service workers are not supported by this browser');
-}
+// app.js
 
-// Register Service Worker
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-    .then(reg => log('Service Worker registered', reg))
-    .catch(err => log('Service Worker registration failed', err));
-}
+// Initialize variables and DOM elements
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const captureButton = document.getElementById('captureButton');
+const saveButton = document.getElementById('saveButton');
+const uploadButton = document.getElementById('uploadButton');
+const preview = document.getElementById('preview');
+const cameraOptions = document.getElementById('cameraOptions');
+const documentTypeSelect = document.getElementById('documentType');
 
-// Variables
-let videoStream;
-let selectedDeviceId;
-let imagesToUpload = [];
-let idNumber = '';
-let logs = ''; // Store logs
+// IndexedDB variables
+let db;
 
-// Custom log function to store logs
-function log(...args) {
-  const message = args.map(arg => (typeof arg === 'object' ? JSON.stringify(arg) : arg)).join(' ');
-  console.log(message);
-  logs += message + '\n';
-}
+// Google API Credentials (Replace with your actual Client ID)
+const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const API_KEY = 'YOUR_GOOGLE_API_KEY';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-// On page load
-window.addEventListener('load', () => {
-  log('Page loaded');
-  getCameras();
-  setupEventListeners();
-  window.addEventListener('online', () => {
-    log('Browser is online');
-    if (imagesToUpload.length > 0) {
-      uploadImages();
-    }
-  });
+// Initialize the application
+document.addEventListener('DOMContentLoaded', () => {
+  initDB();
+  populateCameraOptions();
+  initGoogleAPI();
 });
 
-// Get list of cameras
-async function getCameras() {
-  try {
-    log('Getting list of cameras');
-    // Check for mediaDevices support
-    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-      alert('Your browser does not support media devices.');
-      return;
-    }
+// Initialize IndexedDB
+function initDB() {
+  const request = indexedDB.open('DocumentScannerDB', 1);
 
+  request.onerror = (event) => {
+    console.error('IndexedDB error:', event.target.errorCode);
+  };
+
+  request.onsuccess = (event) => {
+    db = event.target.result;
+    console.log('IndexedDB initialized.');
+  };
+
+  request.onupgradeneeded = (event) => {
+    db = event.target.result;
+    const objectStore = db.createObjectStore('images', { keyPath: 'id', autoIncrement: true });
+    objectStore.createIndex('documentType', 'documentType', { unique: false });
+    console.log('IndexedDB object store created.');
+  };
+}
+
+// Populate Camera Options (Front and Back)
+async function populateCameraOptions() {
+  try {
     const devices = await navigator.mediaDevices.enumerateDevices();
-    // Filter for video input devices
     const videoDevices = devices.filter(device => device.kind === 'videoinput');
 
-    // Filter for rear cameras
-    const rearCameras = [];
-    for (let device of videoDevices) {
-      if (device.label.toLowerCase().includes('back') || device.label.toLowerCase().includes('rear')) {
-        rearCameras.push(device);
-      }
-    }
-
-    // If no rear cameras found, use all video devices
-    const camerasToUse = rearCameras.length > 0 ? rearCameras : videoDevices;
-
-    const cameraList = document.getElementById('cameraList');
-
-    // Clear existing options
-    cameraList.innerHTML = '';
-
-    camerasToUse.forEach((device, index) => {
+    videoDevices.forEach((device, index) => {
       const option = document.createElement('option');
       option.value = device.deviceId;
       option.text = device.label || `Camera ${index + 1}`;
-      cameraList.appendChild(option);
+      cameraOptions.appendChild(option);
     });
 
-    if (camerasToUse.length > 0) {
-      selectedDeviceId = camerasToUse[0].deviceId;
-      startCamera(selectedDeviceId);
-      document.getElementById('status').innerText = '';
+    // Start video with the first available camera
+    if (videoDevices.length > 0) {
+      startCamera(videoDevices[0].deviceId);
     } else {
-      document.getElementById('status').innerText = 'No cameras found on this device.';
+      alert('No camera devices found.');
     }
-
-    cameraList.addEventListener('change', (event) => {
-      selectedDeviceId = event.target.value;
-      log('Selected camera deviceId:', selectedDeviceId);
-      startCamera(selectedDeviceId);
-    });
   } catch (error) {
-    log('Error getting cameras:', error);
-    document.getElementById('status').innerText = 'Error accessing cameras. Please ensure you have granted camera permissions.';
+    console.error('Error accessing media devices.', error);
+    alert('Error accessing camera devices.');
   }
 }
 
-// Start camera
+// Start Camera Stream
 async function startCamera(deviceId) {
-  if (videoStream) {
-    videoStream.getTracks().forEach(track => track.stop());
-    log('Stopped previous video stream');
-  }
+  const constraints = {
+    video: {
+      deviceId: { exact: deviceId }
+    },
+    audio: false
+  };
+
   try {
-    log('Starting camera with deviceId:', deviceId);
-    const constraints = {
-      video: { deviceId: { exact: deviceId } },
-      audio: false
-    };
-    videoStream = await navigator.mediaDevices.getUserMedia(constraints);
-    const videoElement = document.getElementById('video');
-    videoElement.srcObject = videoStream;
-    videoElement.play();
-    document.getElementById('status').innerText = '';
-    log('Camera started successfully');
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
   } catch (error) {
-    log('Error accessing camera:', error);
-    document.getElementById('status').innerText = 'Error accessing camera. Please ensure you have granted camera permissions.';
+    console.error('Error starting camera:', error);
+    alert('Unable to access the selected camera.');
   }
 }
 
-// Setup event listeners
-function setupEventListeners() {
-  log('Setting up event listeners');
-  document.getElementById('captureButton').addEventListener('click', () => {
-    log('Capture button clicked');
-    captureImage();
-  });
+// Handle Camera Selection Change
+cameraOptions.addEventListener('change', (event) => {
+  const selectedDeviceId = event.target.value;
+  if (selectedDeviceId) {
+    startCamera(selectedDeviceId);
+  }
+});
 
-  // Settings button event listener
-  document.getElementById('settingsButton').addEventListener('click', () => {
-    document.getElementById('settingsPanel').classList.remove('hidden');
-    log('Settings panel opened');
-  });
-
-  // Close settings panel
-  document.getElementById('closeSettingsButton').addEventListener('click', () => {
-    document.getElementById('settingsPanel').classList.add('hidden');
-    log('Settings panel closed');
-  });
-
-  // Clear cache and data
-  document.getElementById('clearCacheButton').addEventListener('click', () => {
-    clearCacheAndData();
-  });
-
-  // Show logs
-  document.getElementById('showLogsButton').addEventListener('click', () => {
-    document.getElementById('logsTextArea').value = logs;
-    document.getElementById('logsPanel').classList.remove('hidden');
-    log('Logs panel opened');
-  });
-
-  // Close logs panel
-  document.getElementById('closeLogsButton').addEventListener('click', () => {
-    document.getElementById('logsPanel').classList.add('hidden');
-    log('Logs panel closed');
-  });
-
-  // ID Number Input Formatting
-  const idInput = document.getElementById('idNumber');
-  idInput.addEventListener('input', formatIDNumber);
-}
-
-// Format ID Number Input
-function formatIDNumber() {
-  let input = this.value.replace(/\D/g, ''); // Remove non-digit characters
-  if (input.length > 13) input = input.substring(0, 13);
-  const formatted = input.replace(/(\d{6})(\d{4})(\d{2})(\d{1})/, '$1 $2 $3 $4');
-  this.value = formatted;
-  idNumber = input; // Store unformatted ID number for validation and file naming
-}
-
-// Capture image
-function captureImage() {
-  log('Capturing image');
-  const video = document.getElementById('video');
-  const canvas = document.getElementById('canvas');
+// Capture Image and Apply Monochrome Filter
+captureButton.addEventListener('click', () => {
+  const context = canvas.getContext('2d');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const imageData = canvas.toDataURL('image/png').split(',')[1]; // Get Base64 string without data URL prefix
 
-  // Get selected document type
-  const docType = document.getElementById('documentType').value;
+  // Draw the current frame from the video onto the canvas
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-  log('Image captured, imageData length:', imageData.length);
-  saveImage(imageData, docType);
-  postCaptureOptions();
+  // Get image data
+  let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  let data = imageData.data;
+
+  // Apply monochrome filter
+  for (let i = 0; i < data.length; i += 4) {
+    let grayscale = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+    data[i] = data[i + 1] = data[i + 2] = grayscale;
+  }
+  context.putImageData(imageData, 0, 0);
+
+  // Convert canvas to image and display in preview
+  const img = new Image();
+  img.src = canvas.toDataURL('image/png');
+  img.alt = documentTypeSelect.value;
+  preview.appendChild(img);
+});
+
+// Save Captured Image to IndexedDB
+saveButton.addEventListener('click', () => {
+  const imgData = canvas.toDataURL('image/png');
+  const documentType = documentTypeSelect.value;
+
+  const transaction = db.transaction(['images'], 'readwrite');
+  const objectStore = transaction.objectStore('images');
+  const request = objectStore.add({ documentType: documentType, image: imgData });
+
+  request.onsuccess = () => {
+    console.log('Image saved locally.');
+    alert('Image saved successfully.');
+    preview.innerHTML = ''; // Clear preview
+  };
+
+  request.onerror = (event) => {
+    console.error('Error saving image:', event.target.errorCode);
+    alert('Failed to save image.');
+  };
+});
+
+// Initialize Google API Client
+function initGoogleAPI() {
+  gapi.load('client:auth2', () => {
+    gapi.client.init({
+      apiKey: API_KEY,
+      clientId: CLIENT_ID,
+      discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
+      scope: SCOPES
+    }).then(() => {
+      console.log('Google API client initialized.');
+      // Listen for sign-in state changes.
+      gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+
+      // Handle the initial sign-in state.
+      updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+    }, (error) => {
+      console.error('Error initializing Google API client:', error);
+    });
+  });
 }
 
-// Save image
-function saveImage(imageData, docType) {
-  imagesToUpload.push({ imageData, docType });
-  log(`Image saved for ${docType}, total images to upload: ${imagesToUpload.length}`);
-}
-
-// Post capture options
-function postCaptureOptions() {
-  const proceed = confirm('Do you want to capture another document? Click OK to capture another, or Cancel to upload.');
-  if (proceed) {
-    log('User chose to capture another document');
-    // Do nothing, allow user to capture another document
+// Update UI based on Sign-in Status
+function updateSigninStatus(isSignedIn) {
+  if (isSignedIn) {
+    console.log('User is signed in.');
   } else {
-    log('User chose to upload documents');
-    if (navigator.onLine) {
-      uploadImages();
-    } else {
-      alert('You are offline. Images will be uploaded when you are back online.');
-      log('Browser is offline, cannot upload images now');
+    console.log('User is not signed in.');
+  }
+}
+
+// Upload PDF to Google Drive
+uploadButton.addEventListener('click', async () => {
+  const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
+
+  if (!isSignedIn) {
+    try {
+      await gapi.auth2.getAuthInstance().signIn();
+    } catch (error) {
+      console.error('Error signing in:', error);
+      alert('Failed to sign in to Google.');
+      return;
     }
   }
-}
 
-// Upload images to Apps Script
-function uploadImages() {
-  if (imagesToUpload.length === 0) {
-    log('No images to upload');
-    return;
-  }
+  // Generate PDF from stored images
+  const pdfBlob = await generatePDF();
 
-  // Validate ID Number
-  if (idNumber.length !== 13) {
-    alert('Please enter a valid 13-digit ID number.');
-    log('Invalid ID number');
-    return;
-  }
+  // Upload the PDF to Google Drive
+  uploadToGoogleDrive(pdfBlob);
+});
 
-  log('Uploading images, total images:', imagesToUpload.length);
+// Generate PDF from Images in IndexedDB
+async function generatePDF() {
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['images'], 'readonly');
+    const objectStore = transaction.objectStore('images');
+    const request = objectStore.getAll();
 
-  try {
-    // Prepare the payload
-    const payload = {
-      idNumber: idNumber,
-      imagesData: JSON.stringify(imagesToUpload),
+    request.onsuccess = (event) => {
+      const images = event.target.result;
+      if (images.length === 0) {
+        alert('No images to upload.');
+        reject('No images found.');
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      images.forEach((img, index) => {
+        if (index > 0) {
+          doc.addPage();
+        }
+        const imgProps = doc.getImageProperties(img.image);
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        doc.addImage(img.image, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      });
+
+      // Generate PDF as Blob
+      const pdfBlob = doc.output('blob');
+      resolve(pdfBlob);
     };
 
-    const scriptURL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; // Replace with your Apps Script URL
-
-    log('Sending POST request to Apps Script with form data');
-    fetch(scriptURL, {
-      method: 'POST',
-      mode: 'cors', // Ensure CORS mode is set
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams(payload),
-    })
-    .then(response => {
-      log('Fetch response status:', response.status);
-      log('Fetch response headers:', JSON.stringify([...response.headers]));
-      return response.text().then(result => {
-        log('Server response:', result);
-        if (result.trim() === 'Success') {
-          alert('Documents uploaded successfully.');
-          // Clear the images array after successful upload
-          imagesToUpload = [];
-          log('Images array cleared after successful upload');
-        } else {
-          log('Server returned an error:', result);
-          alert('Error uploading documents. Server error: ' + result);
-        }
-      });
-    })
-    .catch(error => {
-      log('Error uploading images:', error);
-      console.error('Fetch error:', error);
-      alert('Error uploading documents. Network error: ' + (error.message || error));
-    });
-
-  } catch (error) {
-    log('Error preparing images for upload:', error);
-    alert('Error preparing images for upload.');
-  }
+    request.onerror = (event) => {
+      console.error('Error retrieving images from IndexedDB:', event.target.errorCode);
+      reject(event.target.errorCode);
+    };
+  });
 }
 
-// Function to clear cache and data
-function clearCacheAndData() {
-  if (confirm('Are you sure you want to clear cache and data?')) {
-    log('Clearing cache and data');
-    // Clear service worker cache
-    if ('caches' in window) {
-      caches.keys().then((names) => {
-        for (let name of names) {
-          caches.delete(name).then(() => {
-            log('Cache deleted:', name);
-          });
-        }
-      });
-    }
+// Upload Blob to Google Drive
+function uploadToGoogleDrive(blob) {
+  const metadata = {
+    'name': `documents_${new Date().toISOString()}.pdf`, // File name
+    'mimeType': 'application/pdf'
+  };
 
-    // Unregister service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (let registration of registrations) {
-          registration.unregister().then(() => {
-            log('Service worker unregistered');
-          });
-        }
-      });
-    }
+  const accessToken = gapi.auth.getToken().access_token;
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+  form.append('file', blob);
 
-    // Clear imagesToUpload array
-    imagesToUpload = [];
-    log('Images array cleared');
+  fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+    method: 'POST',
+    headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+    body: form,
+  }).then(response => response.json())
+    .then(data => {
+      console.log('File uploaded successfully. File ID:', data.id);
+      alert('PDF uploaded to Google Drive successfully.');
+      // Optionally, clear IndexedDB after successful upload
+      clearIndexedDB();
+    })
+    .catch(error => {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload PDF to Google Drive.');
+    });
+}
 
-    alert('Cache and data cleared. Please reload the app.');
-  } else {
-    log('User canceled cache and data clearing');
-  }
+// Clear IndexedDB after Upload
+function clearIndexedDB() {
+  const transaction = db.transaction(['images'], 'readwrite');
+  const objectStore = transaction.objectStore('images');
+  const request = objectStore.clear();
+
+  request.onsuccess = () => {
+    console.log('IndexedDB cleared.');
+    preview.innerHTML = '';
+  };
+
+  request.onerror = (event) => {
+    console.error('Error clearing IndexedDB:', event.target.errorCode);
+  };
 }

@@ -242,7 +242,7 @@ function uploadImages() {
 
 // Function to upload PDF to Apps Script
 function uploadPdfToAppsScript(pdfBlob, idNumber) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbxEXpX0t39Jh4_2Z9cTsvsEGYoevxhl8PhKrKUdSm9BTD9thNabfsJ21ngFPv3AW8IV-w/exec'; // Replace with your actual Apps Script URL
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbxEXpX0t39Jh4_2Z9cTsvsEGYoevxhl8PhKrKUdSm9BTD9thNabfsJ21ngFPv3AW8IV-w/exec'; // Updated with your new Apps Script URL
 
   console.log('Uploading PDF to Apps Script');
   const reader = new FileReader();

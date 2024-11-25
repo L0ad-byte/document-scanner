@@ -18,35 +18,20 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Document Scanner</h1>
-  </header>
+  <!-- Main Content -->
   <main>
-    <!-- Camera Selection -->
-    <div class="selection-container" id="cameraSelection">
-      <label for="cameraList">Select Camera:</label>
-      <select id="cameraList"></select>
-    </div>
-
-    <!-- Document Type Selection -->
-    <div class="selection-container" id="documentSelection">
-      <label for="documentType">Select Document Type:</label>
-      <select id="documentType">
-        <option value="idFront">ID Front</option>
-        <option value="idBack">ID Back</option>
-        <option value="kb">KB</option>
-        <option value="sso">SSO</option>
-        <option value="hazardId">Hazard ID</option>
-      </select>
-    </div>
-
     <!-- Video Element -->
     <div id="cameraContainer">
       <video id="video" autoplay playsinline></video>
+      <!-- Capture Button -->
+      <button id="captureButton">📷</button>
     </div>
 
-    <!-- Capture Button -->
-    <button id="captureButton">Capture Image</button>
+    <!-- ID Number Input -->
+    <div class="input-container">
+      <label for="idNumber">Enter ID Number:</label>
+      <input type="text" id="idNumber" maxlength="17" placeholder="000000 0000 00 0" />
+    </div>
 
     <!-- Canvas for Image Processing -->
     <canvas id="canvas" style="display:none;"></canvas>
@@ -54,9 +39,6 @@
     <!-- Status Message -->
     <div id="status"></div>
   </main>
-  <footer>
-    &copy; 2023 Your Company Name
-  </footer>
 
   <!-- Settings Panel -->
   <div id="settingsPanel" class="settings-panel hidden">

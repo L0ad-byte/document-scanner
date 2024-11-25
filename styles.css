@@ -1,0 +1,83 @@
+/* styles.css */
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+}
+
+#app {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  text-align: center;
+}
+
+h1 {
+  color: #333;
+}
+
+#camera-selection,
+#document-selection {
+  margin-bottom: 15px;
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+select {
+  width: 100%;
+  padding: 8px;
+  font-size: 16px;
+}
+
+#video {
+  width: 100%;
+  max-width: 600px;
+  height: auto;
+  background-color: #000;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+button {
+  padding: 10px 20px;
+  margin: 10px 5px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#captureButton {
+  background-color: #28a745;
+  color: #fff;
+}
+
+#saveButton {
+  background-color: #007bff;
+  color: #fff;
+}
+
+#uploadButton {
+  background-color: #ffc107;
+  color: #333;
+}
+
+#preview {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+#preview img {
+  width: 100px;
+  height: auto;
+  margin: 5px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+}

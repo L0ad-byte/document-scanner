@@ -10,9 +10,6 @@ if ('serviceWorker' in navigator) {
     .catch(err => log('Service Worker registration failed', err));
 }
 
-// Import jsPDF
-const { jsPDF } = window.jspdf;
-
 // Variables
 let videoStream;
 let selectedDeviceId;
@@ -181,7 +178,7 @@ function captureImage() {
   canvas.height = video.videoHeight;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const imageData = canvas.toDataURL('image/png');
+  const imageData = canvas.toDataURL('image/png').split(',')[1]; // Get Base64 string without data URL prefix
 
   // Get selected document type
   const docType = document.getElementById('documentType').value;
@@ -214,7 +211,7 @@ function postCaptureOptions() {
   }
 }
 
-// Upload images by compiling them into a PDF
+// Upload images to Apps Script
 function uploadImages() {
   if (imagesToUpload.length === 0) {
     log('No images to upload');
@@ -231,66 +228,25 @@ function uploadImages() {
   log('Uploading images, total images:', imagesToUpload.length);
 
   try {
-    // Create a new PDF document
-    const pdfDoc = new jsPDF();
-
-    imagesToUpload.forEach((item, index) => {
-      const { imageData, docType } = item;
-      log(`Adding image ${index + 1} to PDF, docType: ${docType}`);
-      // Add image to PDF
-      pdfDoc.addImage(imageData, 'PNG', 10, 30, 190, 0); // Adjust dimensions as needed
-      // Add document type as text above the image
-      pdfDoc.setFontSize(16);
-      pdfDoc.text(docType, 105, 20, null, null, 'center');
-
-      // Add a new page if not the last image
-      if (index < imagesToUpload.length - 1) {
-        pdfDoc.addPage();
-      }
-    });
-
-    // Generate PDF as a Blob
-    const pdfBlob = pdfDoc.output('blob');
-    log('PDF generated, size:', pdfBlob.size);
-
-    // Upload the PDF to Google Drive
-    uploadPdfToAppsScript(pdfBlob, idNumber);
-  } catch (error) {
-    log('Error generating PDF:', error);
-    alert('Error generating PDF.');
-  }
-}
-
-// Function to upload PDF to Apps Script
-function uploadPdfToAppsScript(pdfBlob, idNumber) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbyjy8R4VnkSvLMw-6MQMX_BhZKlQTnGYyjgxb22o_hQmadS2qCnMwk1KAEb9_6OO_aSHQ/exec'; // Use your new Apps Script URL
-
-  log('Uploading PDF to Apps Script');
-  const reader = new FileReader();
-  reader.onloadend = function() {
-    const base64data = reader.result.split(',')[1]; // Get the Base64 string without the data URL prefix
-    log('PDF converted to Base64, length:', base64data.length);
-
-    const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // Format date as dd-mm-yyyy
-    const fileName = `${idNumber}_${dateStr}.pdf`;
-
+    // Prepare the payload
     const payload = {
-      fileName: fileName,
-      fileData: base64data,
+      idNumber: idNumber,
+      imagesData: JSON.stringify(imagesToUpload),
     };
 
-    log('Sending POST request to Apps Script with JSON payload');
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbyjy8R4VnkSvLMw-6MQMX_BhZKlQTnGYyjgxb22o_hQmadS2qCnMwk1KAEb9_6OO_aSHQ/exec'; // Replace with your Apps Script URL
+
+    log('Sending POST request to Apps Script with form data');
     fetch(scriptURL, {
       method: 'POST',
       mode: 'cors', // Ensure CORS mode is set
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify(payload),
+      body: new URLSearchParams(payload),
     })
     .then(response => {
       log('Fetch response status:', response.status);
-      log('Fetch response headers:', JSON.stringify([...response.headers]));
       return response.text().then(result => {
         log('Server response:', result);
         if (result.trim() === 'Success') {
@@ -305,16 +261,15 @@ function uploadPdfToAppsScript(pdfBlob, idNumber) {
       });
     })
     .catch(error => {
-      log('Error uploading PDF:', error);
+      log('Error uploading images:', error);
       console.error('Fetch error:', error);
       alert('Error uploading documents. Network error: ' + (error.message || error));
     });
-  };
-  reader.onerror = function(error) {
-    log('Error reading PDF Blob:', error);
-    alert('Error reading PDF file.');
-  };
-  reader.readAsDataURL(pdfBlob);
+
+  } catch (error) {
+    log('Error preparing images for upload:', error);
+    alert('Error preparing images for upload.');
+  }
 }
 
 // Function to clear cache and data

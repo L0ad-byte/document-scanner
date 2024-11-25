@@ -6,78 +6,118 @@ const canvas = document.getElementById('canvas');
 const captureButton = document.getElementById('captureButton');
 const saveButton = document.getElementById('saveButton');
 const uploadButton = document.getElementById('uploadButton');
-const preview = document.getElementById('preview');
-const cameraOptions = document.getElementById('cameraOptions');
-const documentTypeSelect = document.getElementById('documentType');
-const clearCacheButton = document.getElementById('clearCacheButton'); // Added
-const sidebar = document.getElementById('sidebar'); // Added
-const overlay = document.getElementById('overlay'); // Added
+const viewLogsButton = document.getElementById('viewLogsButton');
+const clearCacheButton = document.getElementById('clearCacheButton');
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+const logPanel = document.getElementById('log-panel');
+const logContent = document.getElementById('log-content');
+const clearLogsButton = document.getElementById('clearLogsButton');
+const logOverlay = document.getElementById('log-overlay');
 
-// IndexedDB variables
-let db;
+let capturedImageData = '';
 
-// Google API Credentials (Replace with your actual Client ID and API Key)
-const CLIENT_ID = '251373380254-u1llvcs4m9qq2vgekhkaf8bsniicdbte.apps.googleusercontent.com';
-const API_KEY = 'AIzaSyB8U1H1--TXqpQXZhdss0z8XVGqeG7xxrk';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
-const CACHE_NAME = 'document-scanner-cache-v1'; // Ensure this matches service-worker.js
+// Google Apps Script Web App URL
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec'; // TODO: Replace with your Web App URL
+
+// API Key for authentication
+const API_KEY = 'YOUR_SECURE_API_KEY'; // TODO: Replace with the same key used in Code.gs
+
+// Logging variables
+let logs = []; // Array to store log messages
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
-  initDB();
+  initCamera();
   populateCameraOptions();
-  initGoogleAPI();
   setupClearCache();
+  setupViewLogs();
+  setupClearLogs();
 });
 
-// Initialize IndexedDB
-function initDB() {
-  const request = indexedDB.open('DocumentScannerDB', 1);
-
-  request.onerror = (event) => {
-    console.error('IndexedDB error:', event.target.errorCode);
-  };
-
-  request.onsuccess = (event) => {
-    db = event.target.result;
-    console.log('IndexedDB initialized.');
-  };
-
-  request.onupgradeneeded = (event) => {
-    db = event.target.result;
-    const objectStore = db.createObjectStore('images', { keyPath: 'id', autoIncrement: true });
-    objectStore.createIndex('documentType', 'documentType', { unique: false });
-    console.log('IndexedDB object store created.');
-  };
-}
-
-// Populate Camera Options (Front and Back)
-async function populateCameraOptions() {
-  try {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === 'videoinput');
-
-    videoDevices.forEach((device, index) => {
-      const option = document.createElement('option');
-      option.value = device.deviceId;
-      option.text = device.label || `Camera ${index + 1}`;
-      cameraOptions.appendChild(option);
-    });
-
-    // Start video with the first available camera
-    if (videoDevices.length > 0) {
-      startCamera(videoDevices[0].deviceId);
-    } else {
-      alert('No camera devices found.');
-    }
-  } catch (error) {
-    console.error('Error accessing media devices.', error);
-    alert('Error accessing camera devices.');
+/**
+ * Function to log messages
+ * @param {string} message - The message to log
+ */
+function log(message) {
+  const timestamp = new Date().toLocaleString();
+  const logMessage = `[${timestamp}] ${message}`;
+  logs.push(logMessage);
+  console.log(logMessage);
+  
+  // If log panel is open, append the log
+  if (logPanel.style.width === '400px') {
+    appendLog(logMessage);
   }
 }
 
-// Start Camera Stream
-async function startCamera(deviceId) {
+/**
+ * Function to append a single log message to the log panel
+ * @param {string} message - The message to append
+ */
+function appendLog(message) {
+  const p = document.createElement('p');
+  p.textContent = message;
+  logContent.appendChild(p);
+  // Scroll to the bottom
+  logContent.scrollTop = logContent.scrollHeight;
+}
+
+/**
+ * Initialize camera
+ */
+async function initCamera() {
+  log('Initializing camera...');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    log('Camera initialized successfully.');
+  } catch (error) {
+    log(`Error initializing camera: ${error}`);
+    alert('Unable to access the camera.');
+  }
+}
+
+/**
+ * Populate Camera Options (Front and Back)
+ */
+function populateCameraOptions() {
+  log('Populating camera options...');
+  navigator.mediaDevices.enumerateDevices()
+    .then(devices => {
+      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      if (videoDevices.length === 0) {
+        log('No camera devices found.');
+        alert('No camera devices found.');
+        return;
+      }
+
+      const cameraOptions = document.getElementById('cameraOptions');
+      videoDevices.forEach((device, index) => {
+        const option = document.createElement('option');
+        option.value = device.deviceId;
+        option.text = device.label || `Camera ${index + 1}`;
+        cameraOptions.appendChild(option);
+        log(`Camera option added: ${option.text}`);
+      });
+
+      // Optionally, set the first camera as default
+      if (videoDevices.length > 0) {
+        startCamera(videoDevices[0].deviceId);
+      }
+    })
+    .catch(error => {
+      log(`Error enumerating devices: ${error}`);
+      alert('Error accessing camera devices.');
+    });
+}
+
+/**
+ * Start Camera Stream
+ * @param {string} deviceId - The device ID of the camera to start
+ */
+function startCamera(deviceId) {
+  log(`Starting camera with device ID: ${deviceId}`);
   const constraints = {
     video: {
       deviceId: { exact: deviceId }
@@ -85,31 +125,29 @@ async function startCamera(deviceId) {
     audio: false
   };
 
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
-  } catch (error) {
-    console.error('Error starting camera:', error);
-    alert('Unable to access the selected camera.');
-  }
+  navigator.mediaDevices.getUserMedia(constraints)
+    .then(stream => {
+      video.srcObject = stream;
+      log('Camera stream started successfully.');
+    })
+    .catch(error => {
+      log(`Error starting camera: ${error}`);
+      alert('Unable to access the selected camera.');
+    });
 }
 
-// Handle Camera Selection Change
-cameraOptions.addEventListener('change', (event) => {
-  const selectedDeviceId = event.target.value;
-  if (selectedDeviceId) {
-    startCamera(selectedDeviceId);
-  }
-});
-
-// Capture Image and Apply Monochrome Filter
+/**
+ * Capture Image and Apply Monochrome Filter
+ */
 captureButton.addEventListener('click', () => {
+  log('Capture button clicked.');
   const context = canvas.getContext('2d');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
   // Draw the current frame from the video onto the canvas
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
+  log('Image captured from video stream.');
 
   // Get image data
   let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
@@ -121,214 +159,161 @@ captureButton.addEventListener('click', () => {
     data[i] = data[i + 1] = data[i + 2] = grayscale;
   }
   context.putImageData(imageData, 0, 0);
+  log('Monochrome filter applied to the image.');
 
   // Convert canvas to image and display in preview
+  capturedImageData = canvas.toDataURL('image/png');
   const img = new Image();
-  img.src = canvas.toDataURL('image/png');
+  img.src = capturedImageData;
   img.alt = documentTypeSelect.value;
-  preview.appendChild(img);
+  img.style.width = '100%';
+  img.style.maxWidth = '600px';
+  img.style.border = '1px solid #ccc';
+  img.style.borderRadius = '10px';
+  document.getElementById('preview').innerHTML = '';
+  document.getElementById('preview').appendChild(img);
+  log('Captured image displayed in preview.');
 });
 
-// Save Captured Image to IndexedDB
+/**
+ * Save Captured Image to IndexedDB (Optional)
+ */
 saveButton.addEventListener('click', () => {
-  const imgData = canvas.toDataURL('image/png');
-  const documentType = documentTypeSelect.value;
-
-  const transaction = db.transaction(['images'], 'readwrite');
-  const objectStore = transaction.objectStore('images');
-  const request = objectStore.add({ documentType: documentType, image: imgData });
-
-  request.onsuccess = () => {
-    console.log('Image saved locally.');
-    alert('Image saved successfully.');
-    preview.innerHTML = ''; // Clear preview
-  };
-
-  request.onerror = (event) => {
-    console.error('Error saving image:', event.target.errorCode);
-    alert('Failed to save image.');
-  };
+  log('Save & Next button clicked.');
+  // Implement saving to IndexedDB or other storage if required
+  alert('Save functionality is not implemented in this integration.');
 });
 
-// Initialize Google API Client
-function initGoogleAPI() {
-  gapi.load('client:auth2', () => {
-    gapi.client.init({
-      apiKey: API_KEY,
-      clientId: CLIENT_ID,
-      discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"],
-      scope: SCOPES
-    }).then(() => {
-      console.log('Google API client initialized.');
-      // Listen for sign-in state changes.
-      gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
-
-      // Handle the initial sign-in state.
-      updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-    }, (error) => {
-      console.error('Error initializing Google API client:', error);
-    });
-  });
-}
-
-// Update UI based on Sign-in Status
-function updateSigninStatus(isSignedIn) {
-  if (isSignedIn) {
-    console.log('User is signed in.');
-  } else {
-    console.log('User is not signed in.');
-  }
-}
-
-// Upload PDF to Google Drive
+/**
+ * Upload Image to Google Drive via GAS
+ */
 uploadButton.addEventListener('click', async () => {
-  const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
-
-  if (!isSignedIn) {
-    try {
-      await gapi.auth2.getAuthInstance().signIn();
-    } catch (error) {
-      console.error('Error signing in:', error);
-      alert('Failed to sign in to Google.');
-      return;
-    }
+  if (!capturedImageData) {
+    alert('Please capture an image first.');
+    return;
   }
 
-  // Generate PDF from stored images
-  const pdfBlob = await generatePDF();
+  log('Upload to Google Drive button clicked.');
+  try {
+    const response = await fetch(GAS_WEB_APP_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        apiKey: API_KEY, // Include the API Key for authentication
+        imageData: capturedImageData,
+        documentType: documentTypeSelect.value
+      })
+    });
 
-  // Upload the PDF to Google Drive
-  uploadToGoogleDrive(pdfBlob);
+    const result = await response.json();
+
+    if (result.success) {
+      log(`Upload successful. File URL: ${result.url}`);
+      alert('Image uploaded successfully to Google Drive.');
+    } else {
+      log(`Upload failed: ${result.error}`);
+      alert('Failed to upload image. Please check the logs.');
+    }
+  } catch (error) {
+    log(`Error uploading document: ${error}`);
+    alert('Error uploading document. Please check the logs.');
+  }
 });
 
-// Generate PDF from Images in IndexedDB
-async function generatePDF() {
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['images'], 'readonly');
-    const objectStore = transaction.objectStore('images');
-    const request = objectStore.getAll();
-
-    request.onsuccess = (event) => {
-      const images = event.target.result;
-      if (images.length === 0) {
-        alert('No images to upload.');
-        reject('No images found.');
-        return;
-      }
-
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      images.forEach((img, index) => {
-        if (index > 0) {
-          doc.addPage();
-        }
-        const imgProps = doc.getImageProperties(img.image);
-        const pdfWidth = doc.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        doc.addImage(img.image, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      });
-
-      // Generate PDF as Blob
-      const pdfBlob = doc.output('blob');
-      resolve(pdfBlob);
-    };
-
-    request.onerror = (event) => {
-      console.error('Error retrieving images from IndexedDB:', event.target.errorCode);
-      reject(event.target.errorCode);
-    };
-  });
-}
-
-// Upload Blob to Google Drive
-function uploadToGoogleDrive(blob) {
-  const metadata = {
-    'name': `documents_${new Date().toISOString()}.pdf`, // File name
-    'mimeType': 'application/pdf'
-  };
-
-  const accessToken = gapi.auth.getToken().access_token;
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
-  form.append('file', blob);
-
-  fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
-    method: 'POST',
-    headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
-    body: form,
-  }).then(response => response.json())
-    .then(data => {
-      console.log('File uploaded successfully. File ID:', data.id);
-      alert('PDF uploaded to Google Drive successfully.');
-      // Optionally, clear IndexedDB after successful upload
-      clearIndexedDB();
-    })
-    .catch(error => {
-      console.error('Error uploading file:', error);
-      alert('Failed to upload PDF to Google Drive.');
-    });
-}
-
-// Clear IndexedDB after Upload
-function clearIndexedDB() {
-  const transaction = db.transaction(['images'], 'readwrite');
-  const objectStore = transaction.objectStore('images');
-  const request = objectStore.clear();
-
-  request.onsuccess = () => {
-    console.log('IndexedDB cleared.');
-    preview.innerHTML = '';
-  };
-
-  request.onerror = (event) => {
-    console.error('Error clearing IndexedDB:', event.target.errorCode);
-  };
-}
-
-// Menu Toggle Function
+/**
+ * Menu Toggle Function
+ */
 function toggleSidebar() {
+  log('Toggling sidebar.');
   sidebar.style.width = (sidebar.style.width === '250px') ? '0' : '250px';
   overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
 }
 
-// Setup Clear Cache Button
+/**
+ * Log Panel Toggle Function
+ */
+function toggleLogPanel() {
+  log('Toggling log panel.');
+  if (logPanel.style.width === '400px') {
+    logPanel.style.width = '0';
+    logOverlay.style.display = 'none';
+  } else {
+    logPanel.style.width = '400px';
+    logOverlay.style.display = 'block';
+    // Populate log content
+    logContent.innerHTML = ''; // Clear existing logs
+    logs.forEach(msg => appendLog(msg));
+  }
+}
+
+/**
+ * Setup View Logs Button
+ */
+function setupViewLogs() {
+  viewLogsButton.addEventListener('click', () => {
+    log('View Logs button clicked.');
+    toggleLogPanel();
+  });
+}
+
+/**
+ * Setup Clear Cache Button
+ */
 function setupClearCache() {
   clearCacheButton.addEventListener('click', async () => {
+    log('Clear Cache button clicked.');
     const confirmClear = confirm('Are you sure you want to clear the cache and all stored images?');
-    if (!confirmClear) return;
+    if (!confirmClear) {
+      log('Cache clearing canceled by user.');
+      return;
+    }
 
     try {
       // Clear Service Worker Cache
-      const cacheDeleted = await caches.delete(CACHE_NAME);
+      log('Attempting to delete service worker cache...');
+      const cacheDeleted = await caches.delete('document-scanner-cache-v1');
       if (cacheDeleted) {
-        console.log('Service Worker cache cleared.');
+        log('Service Worker cache cleared successfully.');
       } else {
-        console.warn('No matching cache found to clear.');
+        log('No matching cache found to delete.');
       }
 
-      // Clear IndexedDB
-      clearIndexedDB();
+      // Clear IndexedDB (if implemented)
+      // Implement IndexedDB clearing if applicable
+
+      // Clear Logs
+      log('Clearing accumulated logs.');
+      logs = [];
+      logContent.innerHTML = '';
 
       alert('Cache and stored images have been cleared.');
 
       // Close Sidebar and Overlay
       toggleSidebar();
-      
-      // Optionally, unregister the service worker and reload
-      /*
-      if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (registration) {
-          await registration.unregister();
-          console.log('Service Worker unregistered.');
-        }
-      }
-      window.location.reload();
-      */
     } catch (error) {
-      console.error('Error clearing cache:', error);
+      log(`Error clearing cache: ${error}`);
       alert('Failed to clear cache.');
     }
+  });
+}
+
+/**
+ * Clear Logs Function
+ */
+function clearLogs() {
+  log('Clear Logs button clicked.');
+  logs = [];
+  logContent.innerHTML = '';
+  log('All logs have been cleared.');
+}
+
+/**
+ * Setup Clear Logs Button
+ */
+function setupClearLogs() {
+  clearLogsButton.addEventListener('click', () => {
+    clearLogs();
   });
 }

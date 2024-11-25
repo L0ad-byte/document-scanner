@@ -263,7 +263,7 @@ function uploadImages() {
 
 // Function to upload PDF to Apps Script
 function uploadPdfToAppsScript(pdfBlob, idNumber) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbyjy8R4VnkSvLMw-6MQMX_BhZKlQTnGYyjgxb22o_hQmadS2qCnMwk1KAEb9_6OO_aSHQ/exec'; // Use your actual Apps Script URL
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbyjy8R4VnkSvLMw-6MQMX_BhZKlQTnGYyjgxb22o_hQmadS2qCnMwk1KAEb9_6OO_aSHQ/exec'; // Use your new Apps Script URL
 
   log('Uploading PDF to Apps Script');
   const reader = new FileReader();
@@ -290,6 +290,7 @@ function uploadPdfToAppsScript(pdfBlob, idNumber) {
     })
     .then(response => {
       log('Fetch response status:', response.status);
+      log('Fetch response headers:', JSON.stringify([...response.headers]));
       return response.text().then(result => {
         log('Server response:', result);
         if (result.trim() === 'Success') {
@@ -305,6 +306,7 @@ function uploadPdfToAppsScript(pdfBlob, idNumber) {
     })
     .catch(error => {
       log('Error uploading PDF:', error);
+      console.error('Fetch error:', error);
       alert('Error uploading documents. Network error: ' + (error.message || error));
     });
   };

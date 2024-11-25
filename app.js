@@ -242,7 +242,7 @@ function uploadImages() {
 
 // Function to upload PDF to Apps Script
 function uploadPdfToAppsScript(pdfBlob, idNumber) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbyYcE63-do9EX0uxzG5ZTP4r2H0E89_ZXN-FGG-y1V2WryTRqL3AxGxXvw7WSnT79kr3w/exec'; // Updated with your new Apps Script URL
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbxuJuRz-6N2KZ9cz7Fgp39V_OiyX7RVUSGLy_snQuHpSuLfZJhkrQdhHmUecmHcnmbYSg/exec'; // Updated with your new Apps Script URL
 
   console.log('Uploading PDF to Apps Script');
   const reader = new FileReader();

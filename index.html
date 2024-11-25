@@ -4,79 +4,77 @@
   <meta charset="UTF-8">
   <title>Document Scanner PWA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- Link to manifest -->
+  
+  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
-  <!-- Link to CSS -->
-  <link rel="stylesheet" href="style.css">
-  <!-- Fallback icon -->
-  <link rel="icon" sizes="192x192" href="icons/icon-192x192.png">
-  <!-- Meta tags for PWA -->
-  <meta name="theme-color" content="#6200ea">
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
-  <!-- Include jsPDF library -->
+  
+  <!-- Icons for iOS and other platforms -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  
+  <!-- Google API Client Library -->
+  <script src="https://apis.google.com/js/api.js"></script>
+  
+  <!-- jsPDF Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <!-- Main Content -->
-  <main>
+  <div id="app">
+    <h1>Document Scanner</h1>
+    
     <!-- Camera Selection -->
-    <div class="selection-container" id="cameraSelection">
-      <label for="cameraList">Select Camera:</label>
-      <select id="cameraList"></select>
+    <div id="camera-selection">
+      <label for="cameraOptions">Choose Camera:</label>
+      <select id="cameraOptions"></select>
     </div>
-
-    <!-- Video Element -->
-    <div id="cameraContainer">
-      <video id="video" autoplay playsinline></video>
-      <!-- Capture Button -->
-      <button id="captureButton">📷</button>
-    </div>
-
+    
     <!-- Document Type Selection -->
-    <div class="input-container">
+    <div id="document-selection">
       <label for="documentType">Select Document Type:</label>
       <select id="documentType">
-        <option value="ID Front">ID Front</option>
-        <option value="ID Back">ID Back</option>
-        <option value="KB">KB</option>
-        <option value="SSO">SSO</option>
-        <option value="Hazard ID">Hazard ID</option>
+        <option value="idFront">ID Front</option>
+        <option value="idBack">ID Back</option>
+        <option value="kb">KB</option>
+        <option value="sso">SSO</option>
+        <option value="hazardId">Hazard ID</option>
       </select>
     </div>
-
-    <!-- ID Number Input -->
-    <div class="input-container">
-      <label for="idNumber">Enter ID Number:</label>
-      <input type="text" id="idNumber" maxlength="17" placeholder="000000 0000 00 0" />
+    
+    <!-- Video Stream -->
+    <video id="video" autoplay playsinline></video>
+    
+    <!-- Capture Button -->
+    <button id="captureButton">Capture</button>
+    
+    <!-- Canvas for Processing Image -->
+    <canvas id="canvas" style="display: none;"></canvas>
+    
+    <!-- Preview of Captured Images -->
+    <div id="preview"></div>
+    
+    <!-- Action Buttons -->
+    <div id="action-buttons">
+      <button id="saveButton">Save & Next</button>
+      <button id="uploadButton">Upload to Google Drive</button>
     </div>
-
-    <!-- Canvas for Image Processing -->
-    <canvas id="canvas" style="display:none;"></canvas>
-
-    <!-- Status Message -->
-    <div id="status"></div>
-  </main>
-
-  <!-- Settings Panel -->
-  <div id="settingsPanel" class="settings-panel hidden">
-    <h2>Settings</h2>
-    <button id="clearCacheButton">Clear Cache and Data</button>
-    <button id="showLogsButton">View Logs</button>
-    <button id="closeSettingsButton">Close</button>
   </div>
-
-  <!-- Logs Panel -->
-  <div id="logsPanel" class="logs-panel hidden">
-    <h2>Logs</h2>
-    <textarea id="logsTextArea" readonly></textarea>
-    <button id="closeLogsButton">Close</button>
-  </div>
-
-  <!-- Settings Button -->
-  <button id="settingsButton" class="settings-button">⚙️</button>
-
-  <!-- Include main JavaScript file -->
+  
+  <!-- Service Worker Registration -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js').then(registration => {
+          console.log('Service Worker registered with scope:', registration.scope);
+        }).catch(error => {
+          console.error('Service Worker registration failed:', error);
+        });
+      });
+    }
+  </script>
+  
+  <!-- Main JavaScript File -->
   <script src="app.js"></script>
 </body>
 </html>

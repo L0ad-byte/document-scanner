@@ -15,13 +15,13 @@ const { jsPDF } = window.jspdf;
 
 // Variables
 let videoStream;
-let selectedDeviceId;
 let imagesToUpload = [];
+let idNumber = '';
 
 // On page load
 window.addEventListener('load', () => {
   console.log('Page loaded');
-  getCameras();
+  startCamera();
   setupEventListeners();
   window.addEventListener('online', () => {
     console.log('Browser is online');
@@ -31,59 +31,16 @@ window.addEventListener('load', () => {
   });
 });
 
-// Get list of cameras
-async function getCameras() {
-  try {
-    console.log('Getting list of cameras');
-    // Check for mediaDevices support
-    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-      alert('Your browser does not support media devices.');
-      return;
-    }
-
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === 'videoinput');
-    const cameraList = document.getElementById('cameraList');
-
-    // Clear existing options
-    cameraList.innerHTML = '';
-
-    videoDevices.forEach((device, index) => {
-      const option = document.createElement('option');
-      option.value = device.deviceId;
-      option.text = device.label || `Camera ${index + 1}`;
-      cameraList.appendChild(option);
-    });
-
-    if (videoDevices.length > 0) {
-      selectedDeviceId = videoDevices[0].deviceId;
-      startCamera(selectedDeviceId);
-      document.getElementById('status').innerText = '';
-    } else {
-      document.getElementById('status').innerText = 'No cameras found on this device.';
-    }
-
-    cameraList.addEventListener('change', (event) => {
-      selectedDeviceId = event.target.value;
-      console.log('Selected camera deviceId:', selectedDeviceId);
-      startCamera(selectedDeviceId);
-    });
-  } catch (error) {
-    console.error('Error getting cameras:', error);
-    document.getElementById('status').innerText = 'Error accessing cameras. Please ensure you have granted camera permissions.';
-  }
-}
-
 // Start camera
-async function startCamera(deviceId) {
+async function startCamera() {
   if (videoStream) {
     videoStream.getTracks().forEach(track => track.stop());
     console.log('Stopped previous video stream');
   }
   try {
-    console.log('Starting camera with deviceId:', deviceId);
+    console.log('Starting rear camera');
     const constraints = {
-      video: { deviceId: deviceId ? { exact: deviceId } : undefined, facingMode: 'environment' },
+      video: { facingMode: 'environment' },
       audio: false
     };
     videoStream = await navigator.mediaDevices.getUserMedia(constraints);
@@ -102,9 +59,8 @@ async function startCamera(deviceId) {
 function setupEventListeners() {
   console.log('Setting up event listeners');
   document.getElementById('captureButton').addEventListener('click', () => {
-    const docType = document.getElementById('documentType').value;
-    console.log('Capture button clicked, docType:', docType);
-    captureImage(docType);
+    console.log('Capture button clicked');
+    captureImage();
   });
 
   // Settings button event listener
@@ -123,11 +79,24 @@ function setupEventListeners() {
   document.getElementById('clearCacheButton').addEventListener('click', () => {
     clearCacheAndData();
   });
+
+  // ID Number Input Formatting
+  const idInput = document.getElementById('idNumber');
+  idInput.addEventListener('input', formatIDNumber);
+}
+
+// Format ID Number Input
+function formatIDNumber() {
+  let input = this.value.replace(/\D/g, ''); // Remove non-digit characters
+  if (input.length > 13) input = input.substring(0, 13);
+  const formatted = input.replace(/(\d{6})(\d{4})(\d{2})(\d{1})/, '$1 $2 $3 $4');
+  this.value = formatted;
+  idNumber = input; // Store unformatted ID number for validation and file naming
 }
 
 // Capture image
-function captureImage(docType) {
-  console.log('Capturing image for docType:', docType);
+function captureImage() {
+  console.log('Capturing image');
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   canvas.width = video.videoWidth;
@@ -136,14 +105,14 @@ function captureImage(docType) {
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
   const imageData = canvas.toDataURL('image/png');
   console.log('Image captured, imageData length:', imageData.length);
-  saveImage(docType, imageData);
+  saveImage(imageData);
   postCaptureOptions();
 }
 
 // Save image
-function saveImage(docType, imageData) {
-  imagesToUpload.push({ docType, imageData });
-  console.log(`Image saved for ${docType}, total images to upload: ${imagesToUpload.length}`);
+function saveImage(imageData) {
+  imagesToUpload.push(imageData);
+  console.log(`Image saved, total images to upload: ${imagesToUpload.length}`);
 }
 
 // Post capture options
@@ -151,7 +120,7 @@ function postCaptureOptions() {
   const proceed = confirm('Do you want to capture another document? Click OK to capture another, or Cancel to upload.');
   if (proceed) {
     console.log('User chose to capture another document');
-    // Do nothing, allow user to select and capture another document
+    // Do nothing, allow user to capture another document
   } else {
     console.log('User chose to upload documents');
     if (navigator.onLine) {
@@ -169,17 +138,24 @@ function uploadImages() {
     console.log('No images to upload');
     return;
   }
+
+  // Validate ID Number
+  if (idNumber.length !== 13) {
+    alert('Please enter a valid 13-digit ID number.');
+    console.log('Invalid ID number');
+    return;
+  }
+
   console.log('Uploading images, total images:', imagesToUpload.length);
 
   try {
     // Create a new PDF document
     const pdfDoc = new jsPDF();
 
-    imagesToUpload.forEach((image, index) => {
-      const base64Img = image.imageData;
-      console.log(`Adding image ${index + 1} to PDF, docType: ${image.docType}`);
+    imagesToUpload.forEach((imageData, index) => {
+      console.log(`Adding image ${index + 1} to PDF`);
       // Add image to PDF
-      pdfDoc.addImage(base64Img, 'PNG', 10, 10, 190, 0); // Adjust dimensions as needed
+      pdfDoc.addImage(imageData, 'PNG', 10, 10, 190, 0); // Adjust dimensions as needed
 
       // Add a new page if not the last image
       if (index < imagesToUpload.length - 1) {
@@ -192,7 +168,7 @@ function uploadImages() {
     console.log('PDF generated, size:', pdfBlob.size);
 
     // Upload the PDF to Google Drive
-    uploadPdfToAppsScript(pdfBlob);
+    uploadPdfToAppsScript(pdfBlob, idNumber);
   } catch (error) {
     console.error('Error generating PDF:', error);
     alert('Error generating PDF.');
@@ -200,8 +176,8 @@ function uploadImages() {
 }
 
 // Function to upload PDF to Apps Script
-function uploadPdfToAppsScript(pdfBlob) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbzMWFi4xVRmhdqvW7MZxAxGwRX0ryt_eSUUPp2KV8Lt6LFNzI7jsFA4tm1wnaRhG2E_Gw/exec';
+function uploadPdfToAppsScript(pdfBlob, idNumber) {
+  const scriptURL = 'YOUR_NEW_APPS_SCRIPT_WEB_APP_URL'; // Replace with your actual Apps Script URL
 
   console.log('Uploading PDF to Apps Script');
   const reader = new FileReader();
@@ -210,7 +186,8 @@ function uploadPdfToAppsScript(pdfBlob) {
     console.log('PDF converted to Base64, length:', base64data.length);
 
     const formData = new FormData();
-    const fileName = `Documents_${new Date().toISOString()}.pdf`;
+    const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // Format date as dd-mm-yyyy
+    const fileName = `${idNumber}_${dateStr}.pdf`;
     formData.append('fileName', fileName);
     formData.append('fileData', base64data);
 

@@ -19,7 +19,7 @@ const documentTypeSelect = document.getElementById('documentType');
 let capturedImageData = '';
 
 // Google Apps Script Web App URL
-const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec'; // TODO: Replace with your Web App URL
+const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxPh9qWECof8zG8lGAdOwnNlXqgO-9rKzvEo0GOtElRsuOPJ4lAY_fTfJjB6HcGmUKu/exec'; // TODO: Replace with your Web App URL
 
 // Logging variables
 let logs = []; // Array to store log messages

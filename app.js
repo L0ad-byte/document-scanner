@@ -19,7 +19,7 @@ let logs = ''; // Store logs
 
 // Custom log function to store logs
 function log(...args) {
-  const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ');
+  const message = args.map(arg => (typeof arg === 'object' ? JSON.stringify(arg) : arg)).join(' ');
   console.log(message);
   logs += message + '\n';
 }
@@ -234,7 +234,7 @@ function uploadImages() {
       imagesData: JSON.stringify(imagesToUpload),
     };
 
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbyjy8R4VnkSvLMw-6MQMX_BhZKlQTnGYyjgxb22o_hQmadS2qCnMwk1KAEb9_6OO_aSHQ/exec'; // Replace with your Apps Script URL
+    const scriptURL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'; // Replace with your Apps Script URL
 
     log('Sending POST request to Apps Script with form data');
     fetch(scriptURL, {
@@ -247,6 +247,7 @@ function uploadImages() {
     })
     .then(response => {
       log('Fetch response status:', response.status);
+      log('Fetch response headers:', JSON.stringify([...response.headers]));
       return response.text().then(result => {
         log('Server response:', result);
         if (result.trim() === 'Success') {

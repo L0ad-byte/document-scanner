@@ -17,8 +17,8 @@ const overlay = document.getElementById('overlay'); // Added
 let db;
 
 // Google API Credentials (Replace with your actual Client ID and API Key)
-const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
-const API_KEY = 'YOUR_GOOGLE_API_KEY';
+const CLIENT_ID = '251373380254-u1llvcs4m9qq2vgekhkaf8bsniicdbte.apps.googleusercontent.com';
+const API_KEY = 'AIzaSyB8U1H1--TXqpQXZhdss0z8XVGqeG7xxrk';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const CACHE_NAME = 'document-scanner-cache-v1'; // Ensure this matches service-worker.js
 

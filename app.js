@@ -14,14 +14,12 @@ const logPanel = document.getElementById('log-panel');
 const logContent = document.getElementById('log-content');
 const clearLogsButton = document.getElementById('clearLogsButton');
 const logOverlay = document.getElementById('log-overlay');
+const documentTypeSelect = document.getElementById('documentType');
 
 let capturedImageData = '';
 
 // Google Apps Script Web App URL
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec'; // TODO: Replace with your Web App URL
-
-// API Key for authentication
-const API_KEY = 'YOUR_SECURE_API_KEY'; // TODO: Replace with the same key used in Code.gs
 
 // Logging variables
 let logs = []; // Array to store log messages
@@ -201,7 +199,6 @@ uploadButton.addEventListener('click', async () => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        apiKey: API_KEY, // Include the API Key for authentication
         imageData: capturedImageData,
         documentType: documentTypeSelect.value
       })

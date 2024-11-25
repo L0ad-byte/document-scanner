@@ -20,11 +20,29 @@
 <body>
   <!-- Main Content -->
   <main>
+    <!-- Camera Selection -->
+    <div class="selection-container" id="cameraSelection">
+      <label for="cameraList">Select Camera:</label>
+      <select id="cameraList"></select>
+    </div>
+
     <!-- Video Element -->
     <div id="cameraContainer">
       <video id="video" autoplay playsinline></video>
       <!-- Capture Button -->
       <button id="captureButton">📷</button>
+    </div>
+
+    <!-- Document Type Selection -->
+    <div class="input-container">
+      <label for="documentType">Select Document Type:</label>
+      <select id="documentType">
+        <option value="ID Front">ID Front</option>
+        <option value="ID Back">ID Back</option>
+        <option value="KB">KB</option>
+        <option value="SSO">SSO</option>
+        <option value="Hazard ID">Hazard ID</option>
+      </select>
     </div>
 
     <!-- ID Number Input -->

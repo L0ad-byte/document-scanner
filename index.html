@@ -14,10 +14,10 @@
   <!-- Stylesheet -->
   <link rel="stylesheet" href="styles.css">
   
-  <!-- Google API Client Library -->
+  <!-- Google API Client Library (if needed) -->
   <script src="https://apis.google.com/js/api.js"></script>
   
-  <!-- jsPDF Library -->
+  <!-- jsPDF Library (if needed) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
@@ -71,10 +71,26 @@
     <a href="javascript:void(0)" class="closebtn" onclick="toggleSidebar()">&times;</a>
     <h2>Settings</h2>
     <button id="clearCacheButton">Clear Cache</button>
+    <button id="viewLogsButton">View Logs</button> <!-- Added -->
   </div>
   
   <!-- Overlay (to close sidebar when clicking outside) -->
   <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
+  
+  <!-- Log Panel -->
+  <div id="log-panel" class="log-panel">
+    <div class="log-header">
+      <h2>Application Logs</h2>
+      <span class="close-log" onclick="toggleLogPanel()">&times;</span>
+    </div>
+    <div id="log-content" class="log-content">
+      <!-- Logs will be appended here -->
+    </div>
+    <button id="clearLogsButton" onclick="clearLogs()">Clear Logs</button>
+  </div>
+  
+  <!-- Overlay for Log Panel -->
+  <div id="log-overlay" class="overlay" onclick="toggleLogPanel()"></div>
   
   <!-- Service Worker Registration -->
   <script>

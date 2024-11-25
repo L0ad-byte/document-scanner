@@ -6,8 +6,8 @@ if (!('serviceWorker' in navigator)) {
 // Register Service Worker
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js')
-    .then(reg => console.log('Service Worker registered', reg))
-    .catch(err => console.error('Service Worker registration failed', err));
+    .then(reg => log('Service Worker registered', reg))
+    .catch(err => log('Service Worker registration failed', err));
 }
 
 // Import jsPDF
@@ -18,14 +18,22 @@ let videoStream;
 let selectedDeviceId;
 let imagesToUpload = [];
 let idNumber = '';
+let logs = ''; // Store logs
+
+// Custom log function to store logs
+function log(...args) {
+  const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ');
+  console.log(message);
+  logs += message + '\n';
+}
 
 // On page load
 window.addEventListener('load', () => {
-  console.log('Page loaded');
+  log('Page loaded');
   getCameras();
   setupEventListeners();
   window.addEventListener('online', () => {
-    console.log('Browser is online');
+    log('Browser is online');
     if (imagesToUpload.length > 0) {
       uploadImages();
     }
@@ -35,7 +43,7 @@ window.addEventListener('load', () => {
 // Get list of cameras
 async function getCameras() {
   try {
-    console.log('Getting list of cameras');
+    log('Getting list of cameras');
     // Check for mediaDevices support
     if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
       alert('Your browser does not support media devices.');
@@ -79,11 +87,11 @@ async function getCameras() {
 
     cameraList.addEventListener('change', (event) => {
       selectedDeviceId = event.target.value;
-      console.log('Selected camera deviceId:', selectedDeviceId);
+      log('Selected camera deviceId:', selectedDeviceId);
       startCamera(selectedDeviceId);
     });
   } catch (error) {
-    console.error('Error getting cameras:', error);
+    log('Error getting cameras:', error);
     document.getElementById('status').innerText = 'Error accessing cameras. Please ensure you have granted camera permissions.';
   }
 }
@@ -92,10 +100,10 @@ async function getCameras() {
 async function startCamera(deviceId) {
   if (videoStream) {
     videoStream.getTracks().forEach(track => track.stop());
-    console.log('Stopped previous video stream');
+    log('Stopped previous video stream');
   }
   try {
-    console.log('Starting camera with deviceId:', deviceId);
+    log('Starting camera with deviceId:', deviceId);
     const constraints = {
       video: { deviceId: { exact: deviceId } },
       audio: false
@@ -105,36 +113,49 @@ async function startCamera(deviceId) {
     videoElement.srcObject = videoStream;
     videoElement.play();
     document.getElementById('status').innerText = '';
-    console.log('Camera started successfully');
+    log('Camera started successfully');
   } catch (error) {
-    console.error('Error accessing camera:', error);
+    log('Error accessing camera:', error);
     document.getElementById('status').innerText = 'Error accessing camera. Please ensure you have granted camera permissions.';
   }
 }
 
 // Setup event listeners
 function setupEventListeners() {
-  console.log('Setting up event listeners');
+  log('Setting up event listeners');
   document.getElementById('captureButton').addEventListener('click', () => {
-    console.log('Capture button clicked');
+    log('Capture button clicked');
     captureImage();
   });
 
   // Settings button event listener
   document.getElementById('settingsButton').addEventListener('click', () => {
     document.getElementById('settingsPanel').classList.remove('hidden');
-    console.log('Settings panel opened');
+    log('Settings panel opened');
   });
 
   // Close settings panel
   document.getElementById('closeSettingsButton').addEventListener('click', () => {
     document.getElementById('settingsPanel').classList.add('hidden');
-    console.log('Settings panel closed');
+    log('Settings panel closed');
   });
 
   // Clear cache and data
   document.getElementById('clearCacheButton').addEventListener('click', () => {
     clearCacheAndData();
+  });
+
+  // Show logs
+  document.getElementById('showLogsButton').addEventListener('click', () => {
+    document.getElementById('logsTextArea').value = logs;
+    document.getElementById('logsPanel').classList.remove('hidden');
+    log('Logs panel opened');
+  });
+
+  // Close logs panel
+  document.getElementById('closeLogsButton').addEventListener('click', () => {
+    document.getElementById('logsPanel').classList.add('hidden');
+    log('Logs panel closed');
   });
 
   // ID Number Input Formatting
@@ -153,7 +174,7 @@ function formatIDNumber() {
 
 // Capture image
 function captureImage() {
-  console.log('Capturing image');
+  log('Capturing image');
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
   canvas.width = video.videoWidth;
@@ -165,7 +186,7 @@ function captureImage() {
   // Get selected document type
   const docType = document.getElementById('documentType').value;
 
-  console.log('Image captured, imageData length:', imageData.length);
+  log('Image captured, imageData length:', imageData.length);
   saveImage(imageData, docType);
   postCaptureOptions();
 }
@@ -173,22 +194,22 @@ function captureImage() {
 // Save image
 function saveImage(imageData, docType) {
   imagesToUpload.push({ imageData, docType });
-  console.log(`Image saved for ${docType}, total images to upload: ${imagesToUpload.length}`);
+  log(`Image saved for ${docType}, total images to upload: ${imagesToUpload.length}`);
 }
 
 // Post capture options
 function postCaptureOptions() {
   const proceed = confirm('Do you want to capture another document? Click OK to capture another, or Cancel to upload.');
   if (proceed) {
-    console.log('User chose to capture another document');
+    log('User chose to capture another document');
     // Do nothing, allow user to capture another document
   } else {
-    console.log('User chose to upload documents');
+    log('User chose to upload documents');
     if (navigator.onLine) {
       uploadImages();
     } else {
       alert('You are offline. Images will be uploaded when you are back online.');
-      console.log('Browser is offline, cannot upload images now');
+      log('Browser is offline, cannot upload images now');
     }
   }
 }
@@ -196,18 +217,18 @@ function postCaptureOptions() {
 // Upload images by compiling them into a PDF
 function uploadImages() {
   if (imagesToUpload.length === 0) {
-    console.log('No images to upload');
+    log('No images to upload');
     return;
   }
 
   // Validate ID Number
   if (idNumber.length !== 13) {
     alert('Please enter a valid 13-digit ID number.');
-    console.log('Invalid ID number');
+    log('Invalid ID number');
     return;
   }
 
-  console.log('Uploading images, total images:', imagesToUpload.length);
+  log('Uploading images, total images:', imagesToUpload.length);
 
   try {
     // Create a new PDF document
@@ -215,7 +236,7 @@ function uploadImages() {
 
     imagesToUpload.forEach((item, index) => {
       const { imageData, docType } = item;
-      console.log(`Adding image ${index + 1} to PDF, docType: ${docType}`);
+      log(`Adding image ${index + 1} to PDF, docType: ${docType}`);
       // Add image to PDF
       pdfDoc.addImage(imageData, 'PNG', 10, 30, 190, 0); // Adjust dimensions as needed
       // Add document type as text above the image
@@ -230,25 +251,25 @@ function uploadImages() {
 
     // Generate PDF as a Blob
     const pdfBlob = pdfDoc.output('blob');
-    console.log('PDF generated, size:', pdfBlob.size);
+    log('PDF generated, size:', pdfBlob.size);
 
     // Upload the PDF to Google Drive
     uploadPdfToAppsScript(pdfBlob, idNumber);
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    log('Error generating PDF:', error);
     alert('Error generating PDF.');
   }
 }
 
 // Function to upload PDF to Apps Script
 function uploadPdfToAppsScript(pdfBlob, idNumber) {
-  const scriptURL = 'https://script.google.com/macros/s/AKfycbxEXpX0t39Jh4_2Z9cTsvsEGYoevxhl8PhKrKUdSm9BTD9thNabfsJ21ngFPv3AW8IV-w/exec'; // Updated with your new Apps Script URL
+  const scriptURL = 'https://script.google.com/macros/s/AKfycbxEXpX0t39Jh4_2Z9cTsvsEGYoevxhl8PhKrKUdSm9BTD9thNabfsJ21ngFPv3AW8IV-w/exec'; // Replace with your actual Apps Script URL
 
-  console.log('Uploading PDF to Apps Script');
+  log('Uploading PDF to Apps Script');
   const reader = new FileReader();
   reader.onloadend = function() {
     const base64data = reader.result.split(',')[1]; // Get the Base64 string without the data URL prefix
-    console.log('PDF converted to Base64, length:', base64data.length);
+    log('PDF converted to Base64, length:', base64data.length);
 
     const formData = new FormData();
     const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-'); // Format date as dd-mm-yyyy
@@ -256,7 +277,7 @@ function uploadPdfToAppsScript(pdfBlob, idNumber) {
     formData.append('fileName', fileName);
     formData.append('fileData', base64data);
 
-    console.log('Sending POST request to Apps Script');
+    log('Sending POST request to Apps Script');
     fetch(scriptURL, {
       method: 'POST',
       mode: 'cors', // Ensure CORS mode is set
@@ -264,24 +285,24 @@ function uploadPdfToAppsScript(pdfBlob, idNumber) {
     })
     .then(response => response.text())
     .then(result => {
-      console.log('Server response:', result);
+      log('Server response:', result);
       if (result.trim() === 'Success') {
         alert('Documents uploaded successfully.');
         // Clear the images array after successful upload
         imagesToUpload = [];
-        console.log('Images array cleared after successful upload');
+        log('Images array cleared after successful upload');
       } else {
-        console.error('Server returned an error:', result);
+        log('Server returned an error:', result);
         alert('Error uploading documents. Server error: ' + result);
       }
     })
     .catch(error => {
-      console.error('Error uploading PDF:', error);
+      log('Error uploading PDF:', error);
       alert('Error uploading documents. Network error: ' + error.message);
     });
   };
   reader.onerror = function(error) {
-    console.error('Error reading PDF Blob:', error);
+    log('Error reading PDF Blob:', error);
     alert('Error reading PDF file.');
   };
   reader.readAsDataURL(pdfBlob);
@@ -290,13 +311,13 @@ function uploadPdfToAppsScript(pdfBlob, idNumber) {
 // Function to clear cache and data
 function clearCacheAndData() {
   if (confirm('Are you sure you want to clear cache and data?')) {
-    console.log('Clearing cache and data');
+    log('Clearing cache and data');
     // Clear service worker cache
     if ('caches' in window) {
       caches.keys().then((names) => {
         for (let name of names) {
           caches.delete(name).then(() => {
-            console.log('Cache deleted:', name);
+            log('Cache deleted:', name);
           });
         }
       });
@@ -307,7 +328,7 @@ function clearCacheAndData() {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         for (let registration of registrations) {
           registration.unregister().then(() => {
-            console.log('Service worker unregistered');
+            log('Service worker unregistered');
           });
         }
       });
@@ -315,10 +336,10 @@ function clearCacheAndData() {
 
     // Clear imagesToUpload array
     imagesToUpload = [];
-    console.log('Images array cleared');
+    log('Images array cleared');
 
     alert('Cache and data cleared. Please reload the app.');
   } else {
-    console.log('User canceled cache and data clearing');
+    log('User canceled cache and data clearing');
   }
 }

@@ -22,6 +22,11 @@
 </head>
 <body>
   <div id="app">
+    <!-- Menu Button (Hamburger Icon) -->
+    <div id="menu-button" onclick="toggleSidebar()">
+      &#9776; <!-- Unicode for hamburger icon -->
+    </div>
+    
     <h1>Document Scanner</h1>
     
     <!-- Camera Selection -->
@@ -60,6 +65,16 @@
       <button id="uploadButton">Upload to Google Drive</button>
     </div>
   </div>
+  
+  <!-- Sidebar -->
+  <div id="sidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="toggleSidebar()">&times;</a>
+    <h2>Settings</h2>
+    <button id="clearCacheButton">Clear Cache</button>
+  </div>
+  
+  <!-- Overlay (to close sidebar when clicking outside) -->
+  <div id="overlay" class="overlay" onclick="toggleSidebar()"></div>
   
   <!-- Service Worker Registration -->
   <script>
